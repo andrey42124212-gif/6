@@ -184,8 +184,36 @@ def decode(code: bytes, pc: int):
     decode(bytes([0x01, 0, 0, 0, 42]), 0)  ->  ('PUSH', [42], 5)
     decode(bytes([0x2B, 0, 8, 1]), 0)      ->  ('CALL', [8, 1], 4)
     """
-    # TODO 2.1  Не забудьте: i32 — со знаком (int.from_bytes(..., 'big', signed=True)).
-    raise NotImplementedError('Глава 2: decode')
+    # Если вышли за пределы кода - декодировать нечего
+    if pc >= len(code):
+        return None
+
+    opcode = code[pc]
+    if opcode not in OPCODES:
+        return None
+
+    name, form = OPCODES[opcode]
+    p = pc + 1
+    args = []
+
+    for t in form:
+        size = OPERAND_SIZE[t]
+        chunk = code[p : p + size]
+
+        # Если байтов не хватает до конца операнда
+        if len(chunk) < size:
+            return None
+
+        # Знак нужен только для типа 'i'
+        is_signed = (t == 'i')
+        
+        # Переводим байты в целое число (проверьте 'little' или 'big' в вашей спецификации)
+        val = int.from_bytes(chunk, byteorder='big', signed=is_signed)
+        args.append(val)
+
+        p += size
+
+    return name, args, p
 
 
 def disassemble(cart: Cartridge) -> str:
