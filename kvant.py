@@ -106,9 +106,46 @@ def load(data: bytes) -> Cartridge:
     Проверить: длину, сигнатуру KVNT, SHA-256 (последние 32 байта файла).
     При любой проблеме — raise LoadError('понятное сообщение').
     """
-    # TODO 1.2  Порядок полей: сигнатура, версия, владелец, тип, куча,
-    #           глобальные, точка входа, пул строк, код, контрольная сумма.
-    raise NotImplementedError('Глава 1: load')
+    if len(data) < 36: raise LoadError("Файл слишком короток для картриджа.")
+    body, expected_digest = data[:-32],data[-32:]
+    actual_digest = hashlib.sha256(body).digest()
+    if actual_digest != expected_digest: raise LoadError("Контрольная сумма SHA-256 не совпадает.")
+
+    r = Reader(body)
+    
+    # проверка сигнатуры
+    magic = r.take(4)
+    if magic != MAGIC: raise LoadError(f'Неверная сигнатура: ожидалось {MAGIC!r}, получено {magic!r}')
+    
+    # версия
+    version = (r.u8(), r.u8())
+    
+    # владелец
+    owner_len = r.u8()
+    owner = r.take(owner_len).decode('utf-8')
+    
+    # параметры
+    kind = r.u8()
+    heap = r.u16()
+    nglobals = r.u8()
+    entry = r.u16()
+    
+    # пул строк
+    num_consts = r.u16()
+    consts = []
+    for i in range(num_consts):
+        s_len = r.u16()
+        consts.append(r.take(s_len).decode('utf-8'))
+
+    # код
+    code_len = r.u32()
+    code = r.take(code_len)
+
+    # проверка на лишнее
+    if r.pos != len(body):
+        raise LoadError(f'Лишние байты после кода. Прочитано {r.pos}, длина тела {len(body)}')
+
+    return Cartridge(owner=owner, kind=kind, heap=heap, nglobals=nglobals, entry=entry, consts=consts, code=code, version=version)
 
 
 # ════════════════════════════════════════════════════════════════════════
