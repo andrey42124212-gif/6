@@ -1,3 +1,3 @@
-import hashlib
-print(hashlib.sha256(b'abc').digest())      # 32 байта
-print(hashlib.sha256(b'abc').hexdigest())   # те же 32 байта строкой из 64 hex-цифр
+data = bytearray(open('DEMO.kv6', 'rb').read())
+data[200] ^= 1                      # «перевернуть» младший бит одного байта
+open('broken.kv6', 'wb').write(data)
