@@ -207,7 +207,7 @@ def decode(code: bytes, pc: int):
         # Знак нужен только для типа 'i'
         is_signed = (t == 'i')
         
-        # Переводим байты в целое число (проверьте 'little' или 'big' в вашей спецификации)
+        # Переводим байты в целое число
         val = int.from_bytes(chunk, byteorder='big', signed=is_signed)
         args.append(val)
 
@@ -227,8 +227,78 @@ def disassemble(cart: Cartridge) -> str:
     Метки L_XXXX — у адресов, на которые ведут переходы/вызовы, и у точки входа.
     Неизвестный байт печатается как  ??      0x40  и разбор идёт дальше со следующего байта.
     """
-    # TODO 2.2  Сделайте два прохода: сначала соберите адреса меток, потом печатайте.
-    raise NotImplementedError('Глава 2: disassemble')
+    # Достаем сам байткод и точку входа из картриджа
+    code = cart.code
+    entry = getattr(cart, "entry", 0)
+    strings = (
+        getattr(cart, "consts", None)
+    )
+
+    name_to_form = {name: form for name, form in OPCODES.values()}
+
+    # ПРОХОД 1: собираем все адреса-метки (операнды 'a' + точка входа)
+    labels = set()
+    if entry is not None:
+        labels.add(entry)
+
+    pc = 0
+    while pc < len(code):
+        res = decode(code, pc)
+        if res is None:
+            pc += 1
+            continue
+
+        name, args, next_pc = res
+        form = name_to_form.get(name, "")
+        for t, arg in zip(form, args):
+            if t == "a":
+                labels.add(arg)
+
+        pc = next_pc
+
+    # ПРОХОД 2: формируем строки листинга
+    lines = []
+    pc = 0
+    while pc < len(code):
+        cur_pc = pc
+
+        # Метка (с пометкой точки входа, если адрес совпадает с entry)
+        if cur_pc in labels:
+            if cur_pc == entry:
+                lines.append(f"L_{cur_pc:04X}:    ; точка входа")
+            else:
+                lines.append(f"L_{cur_pc:04X}:")
+
+        res = decode(code, pc)
+        if res is None:
+            byte_val = code[cur_pc]
+            lines.append(f"  {cur_pc:04X}  {'??':<8}0x{byte_val:02X}")
+            pc += 1
+            continue
+
+        name, args, next_pc = res
+        form = name_to_form.get(name, "")
+
+        formatted_args = []
+        for t, arg in zip(form, args):
+            if t == "a":
+                formatted_args.append(f"L_{arg:04X}")
+            else:
+                formatted_args.append(str(arg))
+
+        args_str = ", ".join(formatted_args)
+        line = f"  {cur_pc:04X}  {name:<8}{args_str}"
+
+        # Комментарий для PRINTS с текстом строки из таблицы strings
+        if name == "PRINTS" and args:
+            idx = args[0]
+            if 0 <= idx < len(strings):
+                line = f"{line:<21}; {repr(strings[idx])}"
+
+        lines.append(line)
+        pc = next_pc
+
+    return "\n".join(lines)
 
 
 # ════════════════════════════════════════════════════════════════════════
