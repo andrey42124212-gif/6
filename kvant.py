@@ -745,13 +745,23 @@ class VM:
     def op_meminfo(self, args):
         code = args[0]
         match code:
+            case 0: self.push(self.heap.gc_count)
             case 1: self.push(self.heap.used)
             case 2: self.push(self.heap.peak)
             case 3: self.push(self.heap.capacity)
             case 4: self.push(self.heap.allocated)
             case 5: self.push(self.heap.freed)
             case 6: self.push(self.heap.gc_count)
-            case _: raise VMError('Неизвестный код')
+
+    def op_pix(self, args):
+        color = self.pop_int()
+        y = self.pop_int()
+        x = self.pop_int()
+        if not (0 <= x < 32 and 0 <= y < 32):
+            raise VMError('координаты пикселя вне экрана')
+        if not (0 <= color < len(PALETTE)):
+            raise VMError('некорректный цвет пикселя')
+        self.screen[y][x] = color
 
 
     # TODO 3.5  Напишите остальные обработчики. Имена: op_pop, op_dup, op_swap,
