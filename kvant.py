@@ -385,12 +385,22 @@ class Heap:
         vm передаётся, чтобы сборщик мог спросить у машины корни (vm.roots())
         и номер текущей команды (vm.steps) для графика.
         """
+
+        if isinstance(n, HeapObject) or not isinstance(n, int) or not (1 <= n <= 4096): raise VMError('некорректный размер объекта')
+        new_obj = HeapObject(n, fill)
+        self.used += (n+1)
+        if self.used > self.peak: self.peak = self.used
+        self.allocated += 1
+        self.objects 
+        self.objects.append(new_obj)
+        self.log.append((vm.steps, self.used, 'alloc'))
+        return new_obj
+
         # TODO 4.3  Проверить n (число, 1…4096), создать HeapObject, обновить
         #           used / peak / allocated, добавить в self.objects,
         #           записать в self.log (vm.steps, self.used, 'alloc').
         # TODO 6.3  Перед созданием: если не no_limit и used + (n+1) > capacity —
         #           self.collect(vm); если места всё равно нет — VMError('OUT OF MEMORY').
-        raise NotImplementedError('Глава 4: Heap.alloc')
 
     def collect(self, vm):
         """Сборка мусора «пометка и очистка» (mark & sweep). Глава 6."""
@@ -526,15 +536,17 @@ class VM:
 
     def pop_int(self) -> int:
         """Снять ЧИСЛО. Если там ссылка — VMError('ожидалось число')."""
-        if not isinstance(self.stack[-1], int): raise VMError('ожидалось число')
-        return self.pop()
+        v = self.pop()
+        if not isinstance(v, int): raise VMError('ожидалось число')
+        return v
 
     def pop_ref(self) -> HeapObject:
         """Снять ССЫЛКУ на живой объект. Число — 'ожидалась ссылка';
         освобождённый объект — 'обращение к освобождённому объекту'."""
-        raise NotImplementedError('Глава 4: VM.pop_ref') 
-        if isinstance(self.stack[-1]): raise VMError('ожидалась ссылка')
-        self.stack.pop()
+        v = self.pop()
+        if isinstance(v, int): raise VMError('Ожидалась ссылка')
+        if not v.alive: raise VMError('Обращение к освобождённому объекту')
+        return v
 
     # ── ГЛАВА 3: главный цикл ───────────────────────────────────────────
     def step(self):
@@ -615,8 +627,8 @@ class VM:
         self.push(wrap32(-a))
 
     def _cmp(self, f):
-        b = self.pop_int()
-        a = self.pop_int()
+        b = self.pop()
+        a = self.pop()
         self.push(int(f(a,b)))
 
     def op_eq(self, args):
@@ -687,6 +699,59 @@ class VM:
         v = self.pop()
         if v == 0: raise VMError(f'ASSERT {args[0]} провалился')
 
+    def op_call(self, args):
+        addr, n = args
+        if len(self.frames) >= FRAME_LIMIT: raise VMError('Ошибка бесконечной рекурсии')
+        if not(0 <= n <= NLOCALS): raise VMError
+        new_frame = Frame(ret=self.pc, base=0)
+        for i in range(n-1, -1, -1): 
+            new_frame.locals[i] = self.pop()
+        new_frame.base=len(self.stack)
+        self.frames.append(new_frame)
+        self.pc = addr
+
+    def op_ret(self, args):
+        ret_val = self.pop()
+        del self.stack[self.frame.base:]
+        old_frame = self.frames.pop()
+        if old_frame.ret == -1:
+            self.halted = True
+            raise VMError('RET вызван из главной программы')
+        self.pc = old_frame.ret
+        self.push(ret_val)
+        
+    def op_new(self, args):
+        n = self.pop_int()
+        obj = self.heap.alloc(n, self)
+        self.push(obj)
+
+    def op_getf(self, args):
+        idx = self.pop_int()
+        obj = self.pop_ref()
+        if not (0 <= idx < len(obj.items)): raise VMError('Индекс вне диапазона')
+        self.push(obj.items[idx])
+
+    def op_setf(self, args):
+        val = self.pop()
+        idx = self.pop_int()
+        obj = self.pop_ref()
+        if not (0 <= idx < len(obj.items)): raise VMError('Индекс вне диапазона')
+        obj.items[idx] = val
+
+    def op_len(self, args):
+        obj = self.pop_ref()
+        self.push(len(obj.items))
+
+    def op_meminfo(self, args):
+        code = args[0]
+        match code:
+            case 1: self.push(self.heap.used)
+            case 2: self.push(self.heap.peak)
+            case 3: self.push(self.heap.capacity)
+            case 4: self.push(self.heap.allocated)
+            case 5: self.push(self.heap.freed)
+            case 6: self.push(self.heap.gc_count)
+            case _: raise VMError('Неизвестный код')
 
 
     # TODO 3.5  Напишите остальные обработчики. Имена: op_pop, op_dup, op_swap,
