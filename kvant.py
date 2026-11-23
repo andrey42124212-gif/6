@@ -310,20 +310,25 @@ def wrap32(x: int) -> int:
 
     wrap32(2**31) -> -2147483648      wrap32(65536 * 65536) -> 0
     """
-    # TODO 3.1  Подсказка: x & 0xFFFFFFFF, а потом разберитесь со знаком.
-    raise NotImplementedError('Глава 3: wrap32')
-
+    new_x = x & 0xFFFFFFFF
+    if new_x >= 2**31:
+        new_x -= 2**32
+    return new_x
 
 def java_div(a: int, b: int) -> int:
     """Частное, округлённое К НУЛЮ:  java_div(-7, 2) -> -3   (а -7 // 2 в Python = -4!)."""
-    # TODO 3.2  b == 0 -> raise VMError('деление на ноль')
-    raise NotImplementedError('Глава 3: java_div')
+    if b == 0: raise VMError
+    if a == -2147483648 and b == -1: return -2147483648
+    res = abs(a)//abs(b)
+    if (a < 0) ^ (b < 0):
+        return res * -1
+    return res
 
 
 def java_mod(a: int, b: int) -> int:
     """Остаток со знаком делимого:  a - b * java_div(a, b).   java_mod(-7, 2) -> -1."""
-    # TODO 3.2
-    raise NotImplementedError('Глава 3: java_mod')
+    if a == -2147483648 and b == -1: return 0
+    return a-b*java_div(a,b)
 
 
 # ════════════════════════════════════════════════════════════════════════
