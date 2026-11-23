@@ -317,7 +317,7 @@ def wrap32(x: int) -> int:
 
 def java_div(a: int, b: int) -> int:
     """Частное, округлённое К НУЛЮ:  java_div(-7, 2) -> -3   (а -7 // 2 в Python = -4!)."""
-    if b == 0: raise VMError
+    if b == 0: raise VMError('деление на ноль')
     if a == -2147483648 and b == -1: return -2147483648
     res = abs(a)//abs(b)
     if (a < 0) ^ (b < 0):
@@ -515,24 +515,26 @@ class VM:
     # ── ГЛАВА 3: стек ───────────────────────────────────────────────────
     def push(self, v):
         """Положить значение на стек. Больше STACK_LIMIT — VMError('переполнение стека')."""
-        # TODO 3.3
-        raise NotImplementedError('Глава 3: VM.push')
+        if len(self.stack) > STACK_LIMIT: raise VMError('переполнение стека')
+        self.stack.append(v)
 
     def pop(self):
         """Снять значение. Если стек не выше дна текущего кадра — VMError('стек пуст')."""
         # TODO 3.3  Дно — self.frame.base
-        raise NotImplementedError('Глава 3: VM.pop')
+        if (len(self.stack)-self.frame.base) < 1: raise VMError('стек пуст')
+        return self.stack.pop()
 
     def pop_int(self) -> int:
         """Снять ЧИСЛО. Если там ссылка — VMError('ожидалось число')."""
-        # TODO 3.3
-        raise NotImplementedError('Глава 3: VM.pop_int')
+        if not isinstance(self.stack[-1], int): raise VMError('ожидалось число')
+        return self.pop()
 
     def pop_ref(self) -> HeapObject:
         """Снять ССЫЛКУ на живой объект. Число — 'ожидалась ссылка';
         освобождённый объект — 'обращение к освобождённому объекту'."""
-        # TODO 4.3
-        raise NotImplementedError('Глава 4: VM.pop_ref')
+        raise NotImplementedError('Глава 4: VM.pop_ref') 
+        if isinstance(self.stack[-1]): raise VMError('ожидалась ссылка')
+        self.stack.pop()
 
     # ── ГЛАВА 3: главный цикл ───────────────────────────────────────────
     def step(self):
@@ -547,8 +549,19 @@ class VM:
         4. Если обработчик бросил VMError(msg), перебросить
            VMError(f'pc={pc:04X} {мнемоника}: {msg}') — чтобы было видно, где упало.
         """
-        # TODO 3.4
-        raise NotImplementedError('Глава 3: VM.step')
+        pc = self.pc
+        decoded = decode(self.code, pc)
+        if decoded is None: 
+            byte = self.code[pc] if 0 <= pc < len(self.code) else 0
+            raise VMError(f'pc={pc:04X}: неизвестная команда 0x{byte:02X}')
+        name, args, next_pc = decoded
+        if name not in self.handlers: raise VMError(f'pc={pc:04X}: неизвестная команда 0x{self.code[pc]:02X}')
+        self.steps += 1
+        self.pc = next_pc
+        try:
+            self.handlers[name](args)
+        except VMError as e:
+            raise VMError(f'pc={pc:04X} {name}: {e}') from None
 
     # ── обработчики команд ──────────────────────────────────────────────
     # Каждый получает список операндов args (может быть пустым).
@@ -565,6 +578,116 @@ class VM:
 
     def op_halt(self, args):
         self.halted = True
+
+    def op_pop(self, args):
+        self.pop()
+
+    def op_dup(self, args):
+        self.push(self.stack[-1])
+
+    def op_swap(self, args):
+        temp = self.stack[-1]
+        self.stack[-1] = self.stack[-2]
+        self.stack[-2] = temp
+
+    def _binary(self, f):
+        b = self.pop_int()
+        a = self.pop_int()
+        self.push(wrap32(f(a,b)))
+
+    def op_add(self, args):
+        self._binary(lambda a, b: a+b)
+
+    def op_sub(self, args):
+        self._binary(lambda a, b: a-b)
+
+    def op_mul(self, args):
+        self._binary(lambda a, b: a*b)
+
+    def op_div(self, args):
+        self._binary(java_div)
+
+    def op_mod(self, args):
+        self._binary(java_mod)
+    
+    def op_neg(self, args):
+        a = self.pop()
+        self.push(wrap32(-a))
+
+    def _cmp(self, f):
+        b = self.pop_int()
+        a = self.pop_int()
+        self.push(int(f(a,b)))
+
+    def op_eq(self, args):
+        self._cmp(lambda a, b: a==b)
+
+    def op_lt(self, args):
+        self._cmp(lambda a, b: a<b)
+
+    def op_gt(self, args):
+        self._cmp(lambda a, b: a>b)
+
+    def op_not(self, args):
+        a = self.pop()
+        res = 1 if a == 0 else 0
+        self.push(res)
+
+    def op_load(self, args):
+        idx = args[0]
+        if 0 <= idx < len(self.frame.locals):
+            self.push(self.frame.locals[idx])
+        else:
+            raise VMError('нет локальной переменной')
+
+    def op_store(self, args):
+        idx = args[0]
+        v = self.pop()
+        if 0 <= idx < len(self.frame.locals):
+            self.frame.locals[idx] = v
+        else:
+            raise VMError('нет локальной переменной')
+
+    def op_gload(self, args):
+        idx = args[0]
+        if 0 <= idx < len(self.globals):
+            self.push(self.globals[idx])
+        else:
+            raise VMError('нет глобальной переменной')
+
+    def op_gstore(self, args):
+        idx = args[0]
+        v = self.pop()
+        if 0 <= idx < len(self.globals):
+            self.globals[idx] = v
+        else:
+            raise VMError('нет глобальной переменной')
+
+    def op_jmp(self, args):
+        self.pc = args[0]
+
+    def op_jz(self, args):
+        v = self.pop()
+        if v == 0: self.pc = args[0]
+
+    def op_jnz(self, args):
+        v = self.pop()
+        if v != 0: self.pc = args[0]
+
+    def op_print(self, args):
+        v = self.pop()
+        self.write(str(v))
+
+    def op_printc(self, args):
+        v = self.pop_int()
+        self.write(chr(v))
+
+    def op_assert(self, args):
+        num = args[0]
+        v = self.pop()
+        if v == 0: raise VMError(f'ASSERT {args[0]} провалился')
+
+
 
     # TODO 3.5  Напишите остальные обработчики. Имена: op_pop, op_dup, op_swap,
     #   op_add, op_sub, op_mul, op_div, op_mod, op_neg, op_eq, op_lt, op_gt, op_not,
