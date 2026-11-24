@@ -25,6 +25,7 @@ import hashlib
 import os
 import sys
 import time
+import matplotlib
 from dataclasses import dataclass, field
 
 # Чтобы русские буквы нормально печатались в консоли Windows.
@@ -398,11 +399,16 @@ class Heap:
         """
 
         if isinstance(n, HeapObject) or not isinstance(n, int) or not (1 <= n <= 4096): raise VMError('некорректный размер объекта')
+
+        if not self.no_limit and self.used+n+1 > self.capacity:
+            self.collect(vm)
+            if self.used+n+1 > self.capacity:
+                raise VMError('OUT OF MEMORY')
+        
         new_obj = HeapObject(n, fill)
         self.used += (n+1)
         if self.used > self.peak: self.peak = self.used
         self.allocated += 1
-        self.objects 
         self.objects.append(new_obj)
         self.log.append((vm.steps, self.used, 'alloc'))
         return new_obj
@@ -421,7 +427,31 @@ class Heap:
         #           3) очистка: непомеченные -> alive = False, вернуть их слоты,
         #              помеченным снять пометку
         #           4) запись в log (vm.steps, used, 'gc_after')
-        raise NotImplementedError('Глава 6: Heap.collect')
+        self.gc_count += 1
+        self.log.append((vm.steps, self.used, 'gc_before'))
+        queue = []
+        for i in vm.roots():
+            if isinstance(i, HeapObject) and not i.marked:
+                i.marked = True
+                queue.append(i)
+        while queue:
+            obj = queue.pop()
+            for item in obj.items:
+                if isinstance(item, HeapObject) and not item.marked:
+                    item.marked = True
+                    queue.append(item)
+
+        new_objects = []
+        for obj in self.objects:
+            if obj.marked:
+                obj.marked = False
+                new_objects.append(obj)
+            else:
+                obj.alive = False
+                self.used -= len(obj.items) + 1
+                self.freed += 1
+        self.objects = new_objects
+        self.log.append((vm.steps, self.used, 'gc_after'))
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -792,8 +822,10 @@ class VM:
     def roots(self):
         """Все значения, с которых сборщик начинает обход:
         стек операндов, локальные ВСЕХ кадров, глобальные."""
+        yield from self.stack
+        yield from self.globals
+        for frame in self.frames: yield from frame.locals
         # TODO 6.1  Удобно сделать генератором:  yield from self.stack  и т. д.
-        raise NotImplementedError('Глава 6: VM.roots')
 
 
 def _short(v):
