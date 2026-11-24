@@ -863,8 +863,39 @@ def save_png(screen, path, scale=10):
 
 def plot_heap(log, capacity, path):
     """График занятости кучи (глава 6). По горизонтали — номер команды, по вертикали — used."""
-    # TODO 6.4  matplotlib: точки из log, линия ёмкости (axhline), моменты сборок.
-    print('(график кучи ещё не написан — глава 6)')
+    if not log:
+        print('(журнал кучи пуст)')
+        return
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print('(matplotlib не установлен — установите через pip install matplotlib)')
+        return
+
+    steps = [entry[0] for entry in log]
+    used = [entry[1] for entry in log]
+    gc_steps = [entry[0] for entry in log if entry[2] == 'gc_before']
+    gc_used = [entry[1] for entry in log if entry[2] == 'gc_before']
+
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    ax.plot(steps, used, color='#2563eb', linewidth=1.6, label='Занято в куче (used)')
+    ax.axhline(capacity, color='#dc2626', linestyle='--', linewidth=1.3, label=f'Ёмкость ({capacity})')
+
+    if gc_steps:
+        ax.scatter(gc_steps, gc_used, color='#f59e0b', zorder=5, s=45, label='Сборка мусора (GC)')
+        for x in gc_steps:
+            ax.axvline(x, color='#f59e0b', linestyle=':', alpha=0.5)
+
+    ax.set_title('Динамика занятости кучи «Квант-6»')
+    ax.set_xlabel('Номер выполненной команды (steps)')
+    ax.set_ylabel('Занято слотов (used)')
+    ax.set_ylim(0, max(capacity, max(used)) * 1.1)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='lower right')
+
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
 
 
 BENCH_EXPECTED = 'БЕНЧМАРК: КОЛЛАЦ, N = 5000\nЛУЧШЕЕ n = 3711, ДЛИНА = 237\nСУММА ДЛИН = 387940\n'
