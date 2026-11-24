@@ -1,0 +1,202 @@
+L_0000:
+  0000  LOAD    0
+  0002  LOAD    1
+  0004  SUB     
+  0005  DUP     
+  0006  MUL     
+  0007  RET     
+L_0008:
+  0008  LOAD    0
+  000A  PUSH    2
+  000F  LT      
+  0010  JZ      L_0019
+  0013  PUSH    1
+  0018  RET     
+L_0019:
+  0019  LOAD    0
+  001B  LOAD    0
+  001D  PUSH    1
+  0022  SUB     
+  0023  CALL    L_0008, 1
+  0027  MUL     
+  0028  RET     
+L_0029:
+  0029  LOAD    1
+  002B  STORE   3
+  002D  PUSH    0
+  0032  STORE   1
+L_0034:
+  0034  LOAD    0
+  0036  JZ      L_0069
+  0039  PUSH    2
+  003E  NEW     
+  003F  STORE   2
+  0041  LOAD    2
+  0043  PUSH    0
+  0048  LOAD    0
+  004A  LOAD    3
+  004C  MUL     
+  004D  SETF    
+  004E  LOAD    2
+  0050  PUSH    1
+  0055  LOAD    1
+  0057  SETF    
+  0058  LOAD    2
+  005A  STORE   1
+  005C  LOAD    0
+  005E  PUSH    1
+  0063  SUB     
+  0064  STORE   0
+  0066  JMP     L_0034
+L_0069:
+  0069  LOAD    1
+  006B  RET     
+L_006C:    ; точка входа
+  006C  PRINTS  0    ; 'ПРИВЕТ, КВАНТ-6!\n'
+  006F  PUSH    0
+  0074  STORE   0
+L_0076:
+  0076  LOAD    0
+  0078  PUSH    32
+  007D  LT      
+  007E  JZ      L_015C
+  0081  PUSH    0
+  0086  STORE   1
+L_0088:
+  0088  LOAD    1
+  008A  PUSH    32
+  008F  LT      
+  0090  JZ      L_014F
+  0093  PUSH    1
+  0098  STORE   2
+  009A  LOAD    1
+  009C  PUSH    16
+  00A1  CALL    L_0000, 2
+  00A5  LOAD    0
+  00A7  PUSH    16
+  00AC  CALL    L_0000, 2
+  00B0  ADD     
+  00B1  STORE   3
+  00B3  LOAD    3
+  00B5  PUSH    169
+  00BA  LT      
+  00BB  JZ      L_00C5
+  00BE  PUSH    6
+  00C3  STORE   2
+L_00C5:
+  00C5  LOAD    1
+  00C7  PUSH    11
+  00CC  CALL    L_0000, 2
+  00D0  LOAD    0
+  00D2  PUSH    12
+  00D7  CALL    L_0000, 2
+  00DB  ADD     
+  00DC  PUSH    5
+  00E1  LT      
+  00E2  JZ      L_00EC
+  00E5  PUSH    0
+  00EA  STORE   2
+L_00EC:
+  00EC  LOAD    1
+  00EE  PUSH    21
+  00F3  CALL    L_0000, 2
+  00F7  LOAD    0
+  00F9  PUSH    12
+  00FE  CALL    L_0000, 2
+  0102  ADD     
+  0103  PUSH    5
+  0108  LT      
+  0109  JZ      L_0113
+  010C  PUSH    0
+  0111  STORE   2
+L_0113:
+  0113  LOAD    0
+  0115  PUSH    17
+  011A  GT      
+  011B  JZ      L_013B
+  011E  LOAD    3
+  0120  PUSH    82
+  0125  LT      
+  0126  JZ      L_013B
+  0129  LOAD    3
+  012B  PUSH    45
+  0130  GT      
+  0131  JZ      L_013B
+  0134  PUSH    2
+  0139  STORE   2
+L_013B:
+  013B  LOAD    1
+  013D  LOAD    0
+  013F  LOAD    2
+  0141  PIX     
+  0142  LOAD    1
+  0144  PUSH    1
+  0149  ADD     
+  014A  STORE   1
+  014C  JMP     L_0088
+L_014F:
+  014F  LOAD    0
+  0151  PUSH    1
+  0156  ADD     
+  0157  STORE   0
+  0159  JMP     L_0076
+L_015C:
+  015C  PRINTS  1    ; '10! = '
+  015F  PUSH    10
+  0164  CALL    L_0008, 1
+  0168  PRINT   
+  0169  PRINTS  2    ; '\nСПИСКИ: '
+  016C  PUSH    2
+  0171  NEW     
+  0172  GSTORE  0
+  0174  PUSH    0
+  0179  STORE   0
+L_017B:
+  017B  LOAD    0
+  017D  PUSH    12
+  0182  LT      
+  0183  JZ      L_01D9
+  0186  PUSH    6
+  018B  LOAD    0
+  018D  PUSH    1
+  0192  ADD     
+  0193  CALL    L_0029, 2
+  0197  STORE   1
+  0199  LOAD    1
+  019B  PUSH    1
+  01A0  GETF    
+  01A1  PUSH    0
+  01A6  GETF    
+  01A7  PRINT   
+  01A8  PUSH    32
+  01AD  PRINTC  
+  01AE  LOAD    0
+  01B0  PUSH    3
+  01B5  MOD     
+  01B6  JNZ     L_01CC
+  01B9  GLOAD   0
+  01BB  LOAD    0
+  01BD  PUSH    3
+  01C2  DIV     
+  01C3  PUSH    2
+  01C8  MOD     
+  01C9  LOAD    1
+  01CB  SETF    
+L_01CC:
+  01CC  LOAD    0
+  01CE  PUSH    1
+  01D3  ADD     
+  01D4  STORE   0
+  01D6  JMP     L_017B
+L_01D9:
+  01D9  PRINTS  3    ; '\nСБОРОК МУСОРА: '
+  01DC  MEMINFO 0
+  01DE  PRINT   
+  01DF  PRINTS  4    ; ', ЗАНЯТО: '
+  01E2  MEMINFO 1
+  01E4  PRINT   
+  01E5  PRINTS  5    ; ', ПИК: '
+  01E8  MEMINFO 2
+  01EA  PRINT   
+  01EB  PRINTS  6    ; '\n'
+  01EE  HALT    

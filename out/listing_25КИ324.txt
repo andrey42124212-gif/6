@@ -1305,40 +1305,40 @@ L_0E24:
   0F07  PUSH    54
   0F0C  EQ      
   0F0D  ASSERT  48
-  0F10  PUSH    46
-  0F15  PUSH    6
-  0F1A  X3      
-  0F1B  PUSH    2944
-  0F20  EQ      
-  0F21  ASSERT  49
-  0F24  PUSH    46
-  0F29  PRINTC  
-  0F2A  PUSH    252
-  0F2F  PUSH    2
-  0F34  X3      
-  0F35  PUSH    1008
-  0F3A  EQ      
-  0F3B  ASSERT  50
-  0F3E  PUSH    65
-  0F43  PUSH    4
-  0F48  X3      
-  0F49  PUSH    1040
-  0F4E  EQ      
-  0F4F  ASSERT  51
-  0F52  PUSH    46
-  0F57  PRINTC  
-  0F58  PUSH    -6
-  0F5D  PUSH    3
-  0F62  X3      
-  0F63  PUSH    -41
-  0F68  EQ      
-  0F69  ASSERT  52
-  0F6C  PUSH    207
-  0F71  PUSH    36
-  0F76  X3      
-  0F77  PUSH    3312
-  0F7C  EQ      
-  0F7D  ASSERT  53
+    0F10  PUSH    46
+    0F15  PUSH    6
+    0F1A  X3      
+    0F1B  PUSH    2944
+    0F20  EQ      
+    0F21  ASSERT  49
+    0F24  PUSH    46
+    0F29  PRINTC  
+    0F2A  PUSH    252
+    0F2F  PUSH    2
+    0F34  X3      
+    0F35  PUSH    1008
+    0F3A  EQ      
+    0F3B  ASSERT  50
+    0F3E  PUSH    65
+    0F43  PUSH    4
+    0F48  X3      
+    0F49  PUSH    1040
+    0F4E  EQ      
+    0F4F  ASSERT  51
+    0F52  PUSH    46
+    0F57  PRINTC  
+    0F58  PUSH    -6
+    0F5D  PUSH    3
+    0F62  X3      
+    0F63  PUSH    -41
+    0F68  EQ      
+    0F69  ASSERT  52
+    0F6C  PUSH    207
+    0F71  PUSH    36
+    0F76  X3      
+    0F77  PUSH    3312
+    0F7C  EQ      
+    0F7D  ASSERT  53
   0F80  PRINTS  2    ; ' OK\n'
   0F83  PUSH    32
   0F88  NEW     

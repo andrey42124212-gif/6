@@ -1,3 +1,8 @@
-data = bytearray(open('DEMO.kv6', 'rb').read())
-data[200] ^= 1                      # «перевернуть» младший бит одного байта
-open('broken.kv6', 'wb').write(data)
+a = -6
+b = 3
+k = b % 32
+u = a << (k)
+if a<0: u = u | (2**k-1)
+
+print(k)
+print(u)
